@@ -4,9 +4,43 @@ from .serializers import BlogSerializer
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
+from django.core.paginator import Paginator
 from .models import Blog
 from django.db.models import Q
+
+
+
+class PublicBlog(APIView):
+
+    def get(self, request):
+        try:
+            blogs = Blog.objects.all().order_by('?')
+
+
+            if request.GET.get('search'):
+                search = request.GET.get('search')
+                blogs = blogs.filter(Q(title__icontains = search) | Q(blog_text__icontains = search))
+            
+            
+            page_number = request.GET.get('page' , 1)
+            paginator = Paginator(blogs , 1)
+            
+            serializer = BlogSerializer(blogs , many = True)
+            
+            return Response({
+                 'data': serializer.data,
+                 'message': 'blogs fetched successfully'
+            },status = status.HTTP_201_CREATED)
+        
+        except Exception as e:
+            print(e)
+            return Response({
+                'data' : {},
+                'message' : 'something went wrong or invalid page'
+            }, status = status.HTTP_400_BAD_REQUEST)
+            
+
+
 
 
 
@@ -128,6 +162,22 @@ class BlogView(APIView):
                 'data' : {},
                 'message' : 'you are not authorized to this'
             }, status = status.HTTP_400_BAD_REQUEST)
+
+
+            blog[0].delete()
+            return Response({
+                'data' : {},
+                'message' : 'blog deleted successfully'
+            }, status = status.HTTP_400_BAD_REQUEST)
+        
+        except Exception as e:
+            print(e)
+            return Response({
+                'data' : {},
+                'message' : 'something went wrong'
+            }, status = status.HTTP_400_BAD_REQUEST)
+    
+    
 
 
             
